@@ -1,6 +1,7 @@
 .ipynb_checkpoints/
 *.ipynb
 data/*.xlsx
+data/*.xls
 *.txt
 rapport/*.pdf
 output/*
