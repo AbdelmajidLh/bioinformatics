@@ -3,4 +3,6 @@
 data/*
 *.txt
 rapport/*
-output*
+output/*
+*.png
+main2.py
