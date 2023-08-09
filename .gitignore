@@ -4,3 +4,4 @@ rapport/*
 .ipynb_checkpoints
 *.ipynb
 *.txt
+main2.py

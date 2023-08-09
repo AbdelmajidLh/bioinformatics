@@ -1,3 +1,8 @@
+# Supprimer toutes les variables globales
+#for variable in list(globals().keys()):
+#    del globals()[variable]
+
+
 import os
 import re
 import os.path
@@ -137,3 +142,116 @@ if __name__ == "__main__":
 
     # Générer les barplots et les stocker dans le répertoire "output/plots"
     plot_generator.generate_plots()
+
+
+# print(final_dataframe.columns)
+print("------------------------------------------------------")
+
+
+import matplotlib.colors as mcolors
+
+print ("barPlot Dep")
+class BarPlotByDepartementTop10Generator:
+    def __init__(self, df):
+        self.df = df.drop(columns=['Année', 'DepartementPrincipal'])
+
+    def generate_plots(self):
+        # Vérifier si le répertoire "output/plots" existe, sinon le créer
+        output_dir = "output/plots"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        # Grouper les données par département et calculer la somme pour chaque colonne
+        grouped_by_departement = self.df.groupby('Departement').sum()
+
+        # Trier les départements par la somme de chaque colonne et sélectionner le top 10
+        top_10_departements = grouped_by_departement.sum(axis=1).nlargest(10).index
+        df_top_10 = grouped_by_departement.loc[top_10_departements]
+
+        # Créer une palette de couleurs personnalisée allant du plus foncé au plus clair
+        colors = mcolors.LinearSegmentedColormap.from_list('OrangeGrad', ['darkorange', 'orange'], N=len(self.df))
+
+        # Générer un plot par colonne pour le top 10 des départements
+        for column in self.df.columns:
+            plt.figure(figsize=(10, 6))  # Ajuster la taille du graphique
+            sorted_values = df_top_10[column].sort_values(ascending=False)  # Tri des valeurs en ordre décroissant
+            plt.bar(sorted_values.index, sorted_values, color=colors(sorted_values.values))
+            plt.xlabel('Département')
+            plt.ylabel('Somme')
+            plt.title(f'Somme des {column} par département (Top 10)')
+            plt.xticks(rotation=90)  # Faire pivoter les étiquettes des départements sur l'axe des x
+            plt.tight_layout()  # Ajuster la disposition pour éviter que les étiquettes se chevauchent
+            plt.savefig(f'{output_dir}/{column}_barplot_top10_departements.png')
+            plt.close()
+
+if __name__ == "__main__":
+     try:
+         # Créer une instance de BarPlotByDepartementTop10Generator en utilisant le DataFrame final_dataframe
+         plot_generator_top10_departements = BarPlotByDepartementTop10Generator(final_dataframe)
+
+         # Générer les barplots pour le top 10 des départements et les stocker dans le répertoire "output/plots"
+         plot_generator_top10_departements.generate_plots()
+     except Exception as e:
+         print("An error occurred while generating barplots by department:", e)
+
+
+
+print ("Time Series")
+class TimeSeriesGenerator:
+    def __init__(self, df, columns):
+        self.df = df
+        self.columns = columns
+        self.position = 'left'  # Initialize the starting position
+
+    def generate_time_series(self):
+        # Vérifier si le répertoire "output/time_series" existe, sinon le créer
+        output_dir = "output/time_series"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        # Grouper les données par département
+        grouped_df = self.df.groupby('Departement')
+
+        # Création des séries temporelles pour chaque colonne spécifiée
+        for column in self.columns:
+            plt.figure(figsize=(12, 8))
+            for departement, data in grouped_df:
+                plt.plot(data['Année'], data[column])
+                last_value = data[column].iloc[-1]
+
+                # Alternate the position between left and right
+                if self.position == 'left':
+                    xy = (data['Année'].iloc[-1], last_value)
+                    xytext = (-10, 10)
+                    self.position = 'right'
+                else:
+                    xy = (data['Année'].iloc[-1], last_value)
+                    xytext = (10, 10)
+                    self.position = 'left'
+
+                alpha_value = 0.5
+                plt.annotate(departement, xy=xy, xytext=xytext,
+                             textcoords='offset points', arrowprops=dict(arrowstyle="->", color='black'),
+                             alpha=alpha_value)
+
+            plt.xlabel('Année')
+            plt.ylabel(column)
+            plt.title(f'Série temporelle de {column} par départements')
+            plt.tight_layout()
+            plt.savefig(f'{output_dir}/{column}_time_series.png')
+            plt.close()
+
+if __name__ == "__main__":
+    # Liste des colonnes à générer en séries temporelles
+    columns_to_plot = [
+        "Autres coups et blessures volontaires criminels ou correctionnels",
+        "Menaces ou chantages dans un autre but",
+        "Vols violents sans arme contre des femmes sur voie publique ou autre lieu public",
+        "Vols d'automobiles"
+    ]
+
+    # Créer une instance de TimeSeriesGenerator en utilisant le DataFrame final_dataframe
+    time_series_generator = TimeSeriesGenerator(final_dataframe, columns_to_plot)
+
+    # Générer les séries temporelles et les stocker dans le répertoire "output/time_series"
+    time_series_generator.generate_time_series()
