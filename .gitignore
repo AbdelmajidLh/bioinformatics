@@ -1,5 +1,5 @@
 .ipynb_checkpoints/
 *.ipynb
-data/
+data/*
 *.txt
-rapport/
+rapport/*
