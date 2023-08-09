@@ -1,8 +1,8 @@
 .ipynb_checkpoints/
 *.ipynb
-data/*
+data/*.xlsx
 *.txt
-rapport/*
+rapport/*.pdf
 output/*
 *.png
 main2.py
