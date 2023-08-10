@@ -1,7 +1,8 @@
 # Supprimer toutes les variables globales
 #for variable in list(globals().keys()):
 #    del globals()[variable]
-
+from src.functions import *
+log("[INFO] Début du process :")
 
 import os
 import re
@@ -12,6 +13,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+log("[INFO] Début du data processing :")
 class DataProcessor:
     def __init__(self):
         self.df = None
@@ -109,7 +111,7 @@ if __name__ == "__main__":
         for colonne in final_dataframe.columns:
             fichier.write(colonne + '\n')
 
-
+log("[INFO] Données base 1 traitées : voir output :")
 
 class BarPlotGenerator:
     def __init__(self, df):
@@ -150,7 +152,7 @@ print("------------------------------------------------------")
 
 import matplotlib.colors as mcolors
 
-print ("barPlot Dep")
+log("[INFO] Ploting Bar plots par département :")
 class BarPlotByDepartementTop10Generator:
     def __init__(self, df):
         self.df = df.drop(columns=['Année', 'DepartementPrincipal'])
@@ -196,7 +198,7 @@ if __name__ == "__main__":
 
 
 
-print ("Time Series")
+log("[INFO] Début du plots time series :")
 class TimeSeriesGenerator:
     def __init__(self, df, columns):
         self.df = df
@@ -255,3 +257,311 @@ if __name__ == "__main__":
 
     # Générer les séries temporelles et les stocker dans le répertoire "output/time_series"
     time_series_generator.generate_time_series()
+
+log("[INFO] Début du process Taux de chomage :")
+class UnemploymentRatePlotter:
+    def __init__(self, data_path, sheet_name, output_dir):
+        self.data = pd.read_excel(data_path, sheet_name=sheet_name, header=3)
+        print(self.data.columns)
+        self.output_dir = output_dir
+    
+    def preprocess_data(self):
+        numeric_columns = self.data.select_dtypes(include=[np.number])
+        self.grouped_data = numeric_columns.groupby('Code').mean()
+    
+    def generate_plot(self):
+        plt.figure(figsize=(12, 8))
+        self.grouped_data.T.plot(ax=plt.gca())
+        plt.title('Evolution du taux de chômage par région')
+        plt.xlabel('Année')
+        plt.ylabel('Valeur')
+        plt.legend(loc='upper right', bbox_to_anchor=(1.15, 1.02))
+        plt.tight_layout()
+
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+        
+        output_path = os.path.join(self.output_dir, 'unemployment_rate_plot.png')
+        plt.savefig(output_path)
+        plt.close()
+
+if __name__ == "__main__":
+    data_path = "data/Base de donnée 4 Taux de de chomage par région en France.xls"
+    sheet_name = 'Région2'
+    output_dir = "output/plots/chaumage"
+    
+    plotter = UnemploymentRatePlotter(data_path, sheet_name, output_dir)
+    plotter.preprocess_data()
+    plotter.generate_plot()
+
+log("[INFO] Début du process Pauvereté par département  :")
+class PovertyRateBarPlotter:
+    def __init__(self, data_path, sheet_name, output_dir, title, selected_departments):
+        self.data = pd.read_excel(data_path, sheet_name=sheet_name, skiprows=4)  # Ignorer les 4 premières lignes
+        self.output_dir = output_dir
+        self.title = title
+        self.selected_departments = selected_departments
+    
+    def preprocess_data(self):
+        self.filtered_data = self.data[self.data['Code géographique'].isin(self.selected_departments)]
+    
+    def generate_plot(self):
+        plt.figure(figsize=(12, 8))
+        plt.bar(self.filtered_data['Code géographique'], self.filtered_data['Taux de pauvreté-Ensemble (%)'])
+        plt.title(self.title)
+        plt.xlabel('Départements')
+        plt.ylabel('Taux de pauvreté')
+        plt.tight_layout()
+
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+        
+        output_path = os.path.join(self.output_dir, f'poverty_rate_{self.title.lower().replace(" ", "_")}_barplot.png')
+        plt.savefig(output_path)
+        plt.close()
+
+if __name__ == "__main__":
+    data_path = "data/Base de données 3 Taux de pauvreté annuel.xlsx"
+    output_dir = "output/plots/pauvrete"
+    
+    list_of_departments = [
+        ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '21'],
+        ['22', '23', '24', '25', '26', '27', '28', '29', '2A', '2B', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39'],
+        ['40', '41', '42', '43', '44', '45', '46', '47', '48', '49', '50', '51', '52', '53', '54', '55', '56', '57', '58', '59'],
+        ['60', '61', '62', '63', '64', '65', '66', '67', '68', '69', '70', '71', '72', '73', '74', '75', '76', '77', '78', '79'],
+        ['80', '81', '82', '83', '84', '85', '86', '87', '88', '89', '90', '91', '92', '93', '94', '95', '971', '972', '973', '974', '976', '987', '988'],
+        # ... Add more lists of departments here
+    ]
+    
+    for idx, departments in enumerate(list_of_departments):
+        title = f"List {idx + 1}"
+        plotter = PovertyRateBarPlotter(data_path, 'DEP', output_dir, title, departments)
+        plotter.preprocess_data()
+        plotter.generate_plot()
+
+log("[INFO] Début du process Pauvreté all départements  :")
+class PovertyRateBarPlotter:
+    def __init__(self, data_path, sheet_name, output_dir, title, selected_departments):
+        self.data = pd.read_excel(data_path, sheet_name=sheet_name, skiprows=4)  # Ignorer les 4 premières lignes
+        self.output_dir = output_dir
+        self.title = title
+        self.selected_departments = selected_departments
+    
+    def preprocess_data(self):
+        self.filtered_data = self.data[self.data['Code géographique'].isin(self.selected_departments)]
+        self.filtered_data = self.filtered_data.sort_values(by='Taux de pauvreté-Ensemble (%)', ascending=False)
+    
+    def generate_plot(self):
+        plt.figure(figsize=(12, 8))
+        plt.bar(self.filtered_data['Code géographique'], self.filtered_data['Taux de pauvreté-Ensemble (%)'])
+        plt.title(self.title)
+        plt.xlabel('Départements')
+        plt.ylabel('Taux de pauvreté')
+        plt.xticks(rotation=90)  # Ajuster l'angle des étiquettes sur l'axe des x
+        plt.tight_layout()
+
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+        
+        output_path = os.path.join(self.output_dir, f'poverty_rate_{self.title.lower().replace(" ", "_")}_barplot.png')
+        plt.savefig(output_path)
+        plt.close()
+
+if __name__ == "__main__":
+    data_path = "data/Base de données 3 Taux de pauvreté annuel.xlsx"
+    output_dir = "output/plots/pauvrete"
+    
+    title = "Ensemble des départements"
+    selected_departments = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '21', '22', '23', '24', '25', '26', '27', '28', '29', '2A', '2B', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49', '50', '51', '52', '53', '54', '55', '56', '57', '58', '59', '60', '61', '62', '63', '64', '65', '66', '67', '68', '69', '70', '71', '72', '73', '74', '75', '76', '77', '78', '79', '80', '81', '82', '83', '84', '85', '86', '87', '88', '89', '90', '91', '92', '93', '94', '95', '971', '972', '973', '974', '976', '987', '988']
+    
+    plotter = PovertyRateBarPlotter(data_path, 'DEP', output_dir, title, selected_departments)
+    plotter.preprocess_data()
+    plotter.generate_plot()
+
+
+
+log("[INFO] Début du process Merge bases  :")
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import os
+
+class PovertyDataProcessor:
+    def __init__(self, file_path, sheet_name, year_column):
+        self.data = pd.read_excel(file_path, sheet_name=sheet_name, skiprows=4)
+        self.year_column = year_column
+    
+    def preprocess_data(self):
+        self.data.rename(columns={'Code géographique': 'Département'}, inplace=True)
+        self.data.drop(self.data.columns[[1, -1]], axis=1, inplace=True)
+    
+    def merge_with_year_data(self, year_data):
+        merged_data = pd.merge(self.data, year_data, left_on='Département', right_on='Departement', how='outer')
+        merged_data.drop(merged_data.columns[-1], axis=1, inplace=True)
+        merged_data.dropna(inplace=True)
+        merged_data["Département"] = merged_data["Département"].astype("category")
+        return merged_data
+
+class MissingValuesAnalyzer:
+    def __init__(self, data):
+        self.data = data
+    
+    def analyze_missing_values(self):
+        missing_percentages = (self.data.isnull().sum() / len(self.data)) * 100
+        return missing_percentages
+    
+    def generate_heatmap(self, output_dir):
+        plt.figure(figsize=(15, 10))
+        sns.heatmap(self.data.isnull(), cbar=False, cmap='viridis')
+        plt.title('Heatmap of Missing Values')
+        plt.xlabel('Columns')
+        plt.ylabel('Rows')
+        
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        
+        plt.savefig(os.path.join(output_dir, 'missing_values_heatmap.png'))
+        plt.close()
+
+if __name__ == "__main__":
+    file_path = "data/Base de données 3 Taux de pauvreté annuel.xlsx"
+    sheet_name = "DEP"
+    year_column = "Année"
+    
+    processor = PovertyDataProcessor(file_path, sheet_name, year_column)
+    processor.preprocess_data()
+    
+    merged_data = processor.merge_with_year_data(final_dataframe[final_dataframe["Année"]==2019])
+    print(merged_data)
+    
+    # Analyse des valeurs manquantes
+    analyzer = MissingValuesAnalyzer(merged_data)
+    missing_percentages = analyzer.analyze_missing_values()
+    print("Percentage of Missing Values:\n", missing_percentages)
+    
+    # Génération du heatmap des valeurs manquantes
+    output_dir = "output/plots/"
+    analyzer.generate_heatmap(output_dir)
+
+
+
+log("[INFO] Début du process plot correlations  :")
+# import pandas as pd
+# import numpy as np
+# import matplotlib.pyplot as plt
+# import os
+
+# class DataAnalyzer:
+#     def __init__(self, output_dir):
+#         self.output_dir = output_dir
+    
+#     def analyze_and_plot(self, x_column, y_column, title, df_model):
+#         # Convertir les colonnes en données numériques en utilisant .loc
+#         df_model.loc[:, x_column] = pd.to_numeric(df_model[x_column], errors='coerce')
+#         df_model.loc[:, y_column] = pd.to_numeric(df_model[y_column], errors='coerce')
+
+#         # Filtrer les données non nulles en utilisant .loc
+#         df_model.dropna(subset=[x_column, y_column], inplace=True)
+        
+#         # Extraire les données numériques
+#         x = df_model[x_column].to_numpy()
+#         y = df_model[y_column].to_numpy()
+
+#         # Calculer la courbe de tendance
+#         coefficients = np.polyfit(x, y, 1)
+#         polynomial = np.poly1d(coefficients)
+#         trendline = polynomial(x)
+
+#         # Créer le nuage de points avec la courbe de tendance
+#         plt.figure(figsize=(10, 6))
+#         plt.scatter(x, y, label=f"{y_column} - {x_column}")
+#         plt.plot(x, trendline, color="red", label="Courbe de tendance")
+#         plt.xlabel(x_column)
+#         plt.ylabel(y_column)
+#         plt.title(title)
+#         plt.legend()
+
+#         # Sauvegarder le graphique
+#         if not os.path.exists(os.path.join(self.output_dir, "stats")):
+#             os.makedirs(os.path.join(self.output_dir, "stats"))
+        
+#         plot_filename = f"{x_column}_vs_{y_column}.png"
+#         plot_path = os.path.join(self.output_dir, "stats", plot_filename)
+#         plt.savefig(plot_path)
+#         plt.close()
+
+# if __name__ == "__main__":
+#     output_dir = "output/plots"
+#     variables = ["Taux de pauvreté-Ensemble (%)", "Médiane du niveau vie (€)", "Nombre de ménages fiscaux", 
+#                  "Vols violents sans arme contre des établissements financiers,commerciaux ou industriels", 
+#                  "Sequestrations", 'Menaces ou chantages pour extorsion de fonds', 'Menaces ou chantages dans un autre but', 
+#                  'Atteintes à la dignité et à la  personnalité', 'Violations de domicile', 'Vols à main armée contre des établissements financiers', 
+#                  'Vols à main armée contre des éts industriels ou commerciaux', 'Vols à main armée contre des entreprises de transports de fonds']
+#     df_model = merged_data[variables]
+    
+#     analyzer = DataAnalyzer(output_dir)
+#     analyzer.analyze_and_plot("Taux de pauvreté-Ensemble (%)", "Vols à main armée contre des éts industriels ou commerciaux", "Corrélation entre les vols à main armée et le taux de pauvreté", df_model)
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+from scipy import stats
+
+class DataAnalyzer:
+    def __init__(self, output_dir):
+        self.output_dir = output_dir
+    
+    def analyze_and_plot(self, x_column, y_column, title, df_model):
+        # Convertir les colonnes en données numériques en utilisant .loc
+        df_model.loc[:, x_column] = pd.to_numeric(df_model[x_column], errors='coerce')
+        df_model.loc[:, y_column] = pd.to_numeric(df_model[y_column], errors='coerce')
+
+        # Filtrer les données non nulles en utilisant .loc
+        df_model.dropna(subset=[x_column, y_column], inplace=True)
+        
+        # Supprimer les outliers en utilisant le test z-score
+        z_scores = np.abs(stats.zscore(df_model[[x_column, y_column]]))
+        threshold = 3
+        df_model = df_model[(z_scores < threshold).all(axis=1)]
+
+        # Extraire les données numériques
+        x = df_model[x_column].to_numpy()
+        y = df_model[y_column].to_numpy()
+
+        # Calculer la courbe de tendance
+        coefficients = np.polyfit(x, y, 1)
+        polynomial = np.poly1d(coefficients)
+        trendline = polynomial(x)
+
+        # Créer le nuage de points avec la courbe de tendance
+        plt.figure(figsize=(10, 6))
+        plt.scatter(x, y, label=f"{y_column} - {x_column}")
+        plt.plot(x, trendline, color="red", label="Courbe de tendance")
+        plt.xlabel(x_column)
+        plt.ylabel(y_column)
+        plt.title(title)
+        plt.legend()
+
+        # Sauvegarder le graphique
+        if not os.path.exists(os.path.join(self.output_dir, "stats")):
+            os.makedirs(os.path.join(self.output_dir, "stats"))
+        
+        plot_filename = f"{x_column}_vs_{y_column}.png"
+        plot_path = os.path.join(self.output_dir, "stats", plot_filename)
+        plt.savefig(plot_path)
+        plt.close()
+
+if __name__ == "__main__":
+    output_dir = "output/plots"
+    variables = ["Taux de pauvreté-Ensemble (%)", "Médiane du niveau vie (€)", "Nombre de ménages fiscaux", 
+                 "Vols violents sans arme contre des établissements financiers,commerciaux ou industriels", 
+                 "Sequestrations", 'Menaces ou chantages pour extorsion de fonds', 'Menaces ou chantages dans un autre but', 
+                 'Atteintes à la dignité et à la  personnalité', 'Violations de domicile', 'Vols à main armée contre des établissements financiers', 
+                 'Vols à main armée contre des éts industriels ou commerciaux', 'Vols à main armée contre des entreprises de transports de fonds']
+    df_model = merged_data[variables]
+    
+    analyzer = DataAnalyzer(output_dir)
+    analyzer.analyze_and_plot("Taux de pauvreté-Ensemble (%)", "Vols à main armée contre des éts industriels ou commerciaux", "Corrélation entre les vols à main armée et le taux de pauvreté", df_model)
