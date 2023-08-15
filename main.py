@@ -447,10 +447,12 @@ if __name__ == "__main__":
 
 
 log("[INFO] Début du process plot correlations  :")
+
 # import pandas as pd
 # import numpy as np
 # import matplotlib.pyplot as plt
 # import os
+# from scipy import stats
 
 # class DataAnalyzer:
 #     def __init__(self, output_dir):
@@ -464,6 +466,11 @@ log("[INFO] Début du process plot correlations  :")
 #         # Filtrer les données non nulles en utilisant .loc
 #         df_model.dropna(subset=[x_column, y_column], inplace=True)
         
+#         # Supprimer les outliers en utilisant le test z-score
+#         z_scores = np.abs(stats.zscore(df_model[[x_column, y_column]]))
+#         threshold = 3
+#         df_model = df_model[(z_scores < threshold).all(axis=1)]
+
 #         # Extraire les données numériques
 #         x = df_model[x_column].to_numpy()
 #         y = df_model[y_column].to_numpy()
@@ -504,6 +511,7 @@ log("[INFO] Début du process plot correlations  :")
 #     analyzer.analyze_and_plot("Taux de pauvreté-Ensemble (%)", "Vols à main armée contre des éts industriels ou commerciaux", "Corrélation entre les vols à main armée et le taux de pauvreté", df_model)
 
 
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -513,7 +521,7 @@ from scipy import stats
 class DataAnalyzer:
     def __init__(self, output_dir):
         self.output_dir = output_dir
-    
+  
     def analyze_and_plot(self, x_column, y_column, title, df_model):
         # Convertir les colonnes en données numériques en utilisant .loc
         df_model.loc[:, x_column] = pd.to_numeric(df_model[x_column], errors='coerce')
@@ -521,7 +529,7 @@ class DataAnalyzer:
 
         # Filtrer les données non nulles en utilisant .loc
         df_model.dropna(subset=[x_column, y_column], inplace=True)
-        
+      
         # Supprimer les outliers en utilisant le test z-score
         z_scores = np.abs(stats.zscore(df_model[[x_column, y_column]]))
         threshold = 3
@@ -554,14 +562,24 @@ class DataAnalyzer:
         plt.savefig(plot_path)
         plt.close()
 
+import itertools
+
 if __name__ == "__main__":
-    output_dir = "output/plots"
+    output_dir = "output/plots/stats"
     variables = ["Taux de pauvreté-Ensemble (%)", "Médiane du niveau vie (€)", "Nombre de ménages fiscaux", 
                  "Vols violents sans arme contre des établissements financiers,commerciaux ou industriels", 
                  "Sequestrations", 'Menaces ou chantages pour extorsion de fonds', 'Menaces ou chantages dans un autre but', 
                  'Atteintes à la dignité et à la  personnalité', 'Violations de domicile', 'Vols à main armée contre des établissements financiers', 
                  'Vols à main armée contre des éts industriels ou commerciaux', 'Vols à main armée contre des entreprises de transports de fonds']
     df_model = merged_data[variables]
-    
+  
     analyzer = DataAnalyzer(output_dir)
-    analyzer.analyze_and_plot("Taux de pauvreté-Ensemble (%)", "Vols à main armée contre des éts industriels ou commerciaux", "Corrélation entre les vols à main armée et le taux de pauvreté", df_model)
+    
+    for x_column, y_column in itertools.combinations(df_model.columns, 2):
+        title = f"Corrélation entre {y_column} et {x_column}"
+        analyzer.analyze_and_plot(x_column, y_column, title, df_model)
+
+
+# partie ECONOMETRIE
+merged_data.to_csv("output/clean/merged_data.csv")
+print("------------------- END --------------------")
